@@ -1,9 +1,8 @@
 import re
-from subprocess import PIPE, CompletedProcess, run
-from time import sleep, time
-import random
-from datetime import datetime
 from manager import Manager
+from functools import partial
+from multiprocessing import Pool
+from subprocess import PIPE, CompletedProcess, run
 
 
 process: Manager = Manager()
@@ -46,3 +45,21 @@ def filter_and_delete_messages(maillist: list[str], filter: str, count_only: boo
         mails.append(mail)
 
     return mails, messages
+
+
+def run_background(fn, chunked, filter, count_only) -> None:
+    """Запустить процесс в бэкграунде"""
+    
+    try:
+        
+        # Pool без аргументов использует все процессоры машины
+        with Pool() as pool:
+            
+            f = partial(fn, filter=filter, count_only=count_only)
+            
+            for mails, messages in pool.map(f, chunked):
+                process.extend_processed_mails(mails)
+                process.extend_deleted_messages(messages)
+
+    finally:
+        process.remove_worker_and_swap()

@@ -1,39 +1,15 @@
-import asyncio
 import uvicorn
-from multiprocessing import Pool, cpu_count
+
 from typing import Optional
+from multiprocessing import cpu_count
 from fastapi.responses import ORJSONResponse
 from fastapi import FastAPI, Body, Depends, BackgroundTasks
-from concurrent.futures.process import ProcessPoolExecutor
-from functools import partial
 
-from functions import process, get_all_users, filter_and_delete_messages
+from functions import process, get_all_users, filter_and_delete_messages, run_background
 from dependencies import authenticate, allow_one_process
 
 
 app = FastAPI(default_response_class=ORJSONResponse)
-
-
-@app.on_event('startup')
-async def on_startup():
-    asyncio.create_task(process.run_main())
-
-
-def run_background(fn, chunked, filter, count_only) -> None:
-    
-    try:
-        
-        # Pool без аргументов использует максимальное кол-во процессоров
-        with Pool() as pool:
-            
-            f = partial(fn, filter=filter, count_only=count_only)
-            
-            for mails, messages in pool.map(f, chunked):
-                process.extend_processed_mails(mails)
-                process.extend_deleted_messages(messages)
-
-    finally:
-        process.remove_worker_and_swap()
 
 
 @app.get('/status', dependencies=[Depends(authenticate)])
@@ -66,7 +42,7 @@ async def delete_messages(background: BackgroundTasks,
         cpu: int = cpu_count()
         
         # Заблокировать процесс
-        process.add_workers(2)
+        process.add_worker(2)
         
         # Получить список всех пользователей
         mails: list[str] = get_all_users()
@@ -89,5 +65,6 @@ async def delete_messages(background: BackgroundTasks,
 
     return {'result': 'Accepted'}
 
+
 if __name__ == "__main__":
-    uvicorn.run("mail-remover:app", host="0.0.0.0", port=8754, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8754)

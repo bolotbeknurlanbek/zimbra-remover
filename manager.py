@@ -1,5 +1,5 @@
-import asyncio
 from datetime import datetime
+
 
 class Manager:
     """
@@ -8,7 +8,7 @@ class Manager:
     
     def __init__(self):
         
-        self.workers:                   int        = 0
+        self.workers:                   int         = 0
 
         self.last_filter:               str         = ''
         self.last_action:               str         = ''
@@ -23,17 +23,14 @@ class Manager:
         self.current_deleted_messages:  list[str]   = []
 
 
-    def add_worker(self) -> None:
-        self.workers += 1
-
-    def add_workers(self, n: int) -> None:
-        self.workers = n
+    def add_worker(self, n: int = 1) -> None:
+        self.workers += n
+        
         
     def remove_worker_and_swap(self) -> None:
         self.workers -= 1
-        print(self.workers)
+
         if not self.is_blocked:
-            print('Swapped')
             self.swap_states()
         
         
@@ -100,8 +97,3 @@ class Manager:
             'current_processed_mails':     self.current_processed_mails,
             'current_deleted_messages':    self.current_deleted_messages
         }
-    
-    
-    async def run_main(self):
-        while True:
-            await asyncio.sleep(0.1)
