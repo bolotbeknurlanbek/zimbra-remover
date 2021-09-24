@@ -37,23 +37,15 @@ async def delete_messages(background: BackgroundTasks,
     process.set_current_state(filter, action='DELETE' if not count_only else 'COUNT')
     
     try:
-
-        # Использовать все ядра машины
-        cpu: int = cpu_count()
         
         # Заблокировать процесс
         process.add_worker(2)
         
         # Получить список всех пользователей
         mails: list[str] = get_all_users()
-        
-        # Распределить список пользователей на все ядра машины
-        chunked = [
-            mails[(i * len(mails)) // cpu : ((i + 1) * len(mails)) // cpu] 
-            for i in range(cpu)
-        ]
 
-        background.add_task(run_background, filter_and_delete_messages, chunked, filter, count_only)
+        # Выполнить задачу в фоновом режиме
+        background.add_task(filter_and_delete_messages, mails, filter, count_only)
 
     except:
         raise

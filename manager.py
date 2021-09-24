@@ -29,7 +29,6 @@ class Manager:
         
     def remove_worker_and_swap(self) -> None:
         self.workers -= 1
-
         if not self.is_blocked:
             self.swap_states()
         
